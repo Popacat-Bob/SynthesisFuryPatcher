@@ -20,7 +20,7 @@ public class RaceDamage
 
 public class Settings {
     public List<ModKey> TargetMods {get; set;} = new();
-    public List<FormLink<Race>> ExcludeRaces {get; set;} = new();
+    public HashSet<FormLink<Race>> ExcludeRaces {get; set;} = new();
     [Tooltip("Adjust individual race damage.")]
     public List<RaceDamage> CustomRaceDamage {get; set;} = new();
 }

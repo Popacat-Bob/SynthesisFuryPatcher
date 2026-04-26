@@ -58,3 +58,4 @@ Z:\home\Broli\Projects\SynthesisFuryPatcher\SynthesisFurypatcher\bin\Release\net
 Z:\home\Broli\Projects\SynthesisFuryPatcher\SynthesisFurypatcher\bin\Release\net8.0\win-x64\Mutagen.Bethesda.Fallout4.dll
 Z:\home\Broli\Projects\SynthesisFuryPatcher\SynthesisFurypatcher\bin\Release\net8.0\win-x64\Mutagen.Bethesda.Oblivion.dll
 Z:\home\Broli\Projects\SynthesisFuryPatcher\SynthesisFurypatcher\bin\Release\net8.0\win-x64\Mutagen.Bethesda.Starfield.dll
+Z:\home\Broli\Projects\SynthesisFuryPatcher\SynthesisFurypatcher\obj\Release\net8.0\win-x64\SynthesisFurypatcher.sourcelink.json

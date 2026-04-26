@@ -24,7 +24,15 @@ public static class Program
         "FURY_FormList_FoodTypes"};
     
     private static readonly string tamedKeyword = "Futhark_InjectedKeyword_Race_IsTamedAnimalRace";
+
     private static Lazy<Settings> _settings = null!;
+
+    private static double  setBaseLevel(float magicka_stat, float stamina_stat, float health_stat) {
+        return Math.Floor(Math.Max(magicka_stat - 100, 0)/10) 
+            + Math.Floor(Math.Max(stamina_stat - 100, 0)/10) 
+            + Math.Floor(Math.Max(health_stat - 100, 0)/10);
+    }
+
     public static async Task<int> Main(string[] args)
     {
         return await SynthesisPipeline.Instance
@@ -90,10 +98,13 @@ public static class Program
         // This should not fail
         var racesFrom = Patch_Lookup["FURY_FormList_RacesFrom"];
         var racesTo = Patch_Lookup["FURY_FormList_RacesTo"];
+        var levelsFL = Patch_Lookup["FURY_Formlist_PetLevels"];
+        var strengthsFL = Patch_Lookup["FURY_FormList_PetStrengthValues"];
+        var foodsFL = Patch_Lookup["FURY_FormList_FoodTypes"];
 
         foreach (IRaceGetter race in state.LoadOrder.PriorityOrder.Race().WinningOverrides()) {
             if (!baseFuryRaces.Contains(race.FormKey) && !_settings.Value.ExcludeRaces.Contains(race) && race.HasKeyword("ActorTypeAnimal", state.LinkCache)) {
-
+                
                 racesFrom.Items.Add(race); 
                 
                 var petRace = state.PatchMod.Races.DuplicateInAsNewRecord(race);
@@ -101,8 +112,44 @@ public static class Program
                 petRace.Keywords.Add(tamedKeyObj!.ToLink<IKeywordGetter>());
                 petRace.EditorID = $"FURY_Ext_{petRace.EditorID}";
                 racesTo.Items.Add(petRace);
+                
+                // I do not know how to do this better, sorry
+                var strengthGlob = state.PatchMod.Globals.AddNewShort();
+                strengthGlob.EditorID = $"FURY_Ext_Global_Weight_{petRace.EditorID}";
 
+                var levelGlob = state.PatchMod.Globals.AddNewShort();
+                levelGlob.EditorID = $"FURY_Ext_Global_Level_{petRace.EditorID}";
+
+                var foodGlob = state.PatchMod.Globals.AddNewShort();
+                foodGlob.EditorID = $"FURY_Ext_Global_FoodType_{petRace.EditorID}";
+
+                switch (petRace.Size) {
+                    case Mutagen.Bethesda.Skyrim.Size.Small:
+                        strengthGlob.Data = 4;
+                        levelGlob.Data = 10;
+                        break;
+                    case Mutagen.Bethesda.Skyrim.Size.Medium:
+                        strengthGlob.Data = 6;
+                        levelGlob.Data = 15;
+                        break;
+                    case Mutagen.Bethesda.Skyrim.Size.Large:
+                        strengthGlob.Data = 8;
+                        levelGlob.Data = 20;
+                        break;
+                    case Mutagen.Bethesda.Skyrim.Size.ExtraLarge:
+                        strengthGlob.Data = 10;
+                        levelGlob.Data = 25;
+                        break;
+                }
+
+                strengthsFL.Items.Add(strengthGlob);
+                levelsFL.Items.Add(levelGlob);
+                foodsFL.Items.Add(foodGlob);
+                
+                Console.WriteLine($"SUCCESS: Processed EditorID: {petRace.EditorID}");
             }
-        } 
+        }    
+
+        Console.WriteLine("Successfully added all animals to Fury!");
     }
 }
