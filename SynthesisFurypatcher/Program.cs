@@ -21,7 +21,11 @@ public static class Program
         "FURY_FormList_RacesTo", 
         "FURY_Formlist_PetLevels", 
         "FURY_FormList_PetStrengthValues", 
-        "FURY_FormList_FoodTypes"};
+        "FURY_FormList_FoodTypes",
+        "FURY_FormList_PetActorsBothGenders",
+        "FURY_FormList_PetActorsF",
+        "FURY_FormList_PetActorsM",
+    };
     
     private static readonly string tamedKeyword = "Futhark_InjectedKeyword_Race_IsTamedAnimalRace";
 
@@ -72,18 +76,18 @@ public static class Program
         }
         
         Console.WriteLine("SUCCESS: Fury Formlists found!");
+
         // get all animal races in Fury
-        HashSet<FormKey> baseFuryRaces= new HashSet<FormKey>();
-        
+        HashSet<FormKey> baseRaces = new HashSet<FormKey>();
         foreach (var item in FL_Lookup["FURY_FormList_RacesFrom"].Items) {
             if (state.LinkCache.TryResolve<IRaceGetter>(item.FormKey, out var race)) {
-               baseFuryRaces.Add(race.FormKey); 
+               baseRaces.Add(race.FormKey); 
             }
         }
 
         foreach (var item in FL_Lookup["FURY_FormList_RacesTo"].Items) {
             if (state.LinkCache.TryResolve<IRaceGetter>(item.FormKey, out var race)) {
-               baseFuryRaces.Add(race.FormKey); 
+               baseRaces.Add(race.FormKey); 
             }
         }
         
@@ -102,17 +106,39 @@ public static class Program
         var strengthsFL = Patch_Lookup["FURY_FormList_PetStrengthValues"];
         var foodsFL = Patch_Lookup["FURY_FormList_FoodTypes"];
 
-        foreach (IRaceGetter race in state.LoadOrder.PriorityOrder.Race().WinningOverrides()) {
-            if (!baseFuryRaces.Contains(race.FormKey) && !_settings.Value.ExcludeRaces.Contains(race) && race.HasKeyword("ActorTypeAnimal", state.LinkCache)) {
+        foreach (INpcGetter npc in state.LoadOrder.PriorityOrder.Npc().WinningOverrides()) {
+            IRaceGetter race = npc.Race.Resolve(state.LinkCache);
+            if (!baseRaces.Contains(race.FormKey) && race.HasKeyword("ActorTypeAnimal", state.LinkCache)) {
                 
-                racesFrom.Items.Add(race); 
+                // make only 2 unique actors per race, NEVER reuse races
+                baseRaces.Add(race.FormKey);
                 
                 var petRace = state.PatchMod.Races.DuplicateInAsNewRecord(race);
                 petRace.Keywords ??= new Noggog.ExtendedList<IFormLinkGetter<IKeywordGetter>>();
                 petRace.Keywords.Add(tamedKeyObj!.ToLink<IKeywordGetter>());
                 petRace.EditorID = $"FURY_Ext_{petRace.EditorID}";
                 racesTo.Items.Add(petRace);
+
+                var petActorM = state.PatchMod.Npcs.DuplicateInAsNewRecord(npc); 
+                var petActorF = state.PatchMod.Npcs.DuplicateInAsNewRecord(npc);
                 
+                petActorM.EditorID = $"FURY_Ext_Actor_Pet_{npc.EditorID}";
+                petActorF.EditorID = $"FURY_Ext_Actor_Pet_{npc.EditorID}_F";
+
+                var femaleFlag = Mutagen.Bethesda.Skyrim.NpcConfiguration.Flag.Female;
+                var affectsDetectionFlag = Mutagen.Bethesda.Skyrim.NpcConfiguration.Flag.DoesntAffectStealthMeter;
+
+                if (!npc.Configuration.Flags.HasFlag(femaleFlag)) {
+                    petActorF.Configuration.Flags |= femaleFlag;
+                } else {
+                    petActorM.Configuration.Flags &= ~femaleFlag;
+                }
+
+                petActorF.Configuration.Flags |= affectsDetectionFlag;
+                petActorM.Configuration.Flags |= affectsDetectionFlag;
+                petActorF.Configuration.Level = new NpcLevel() {Level = 1};
+                petActorM.Configuration.Level = new NpcLevel() {Level = 1};
+
                 // I do not know how to do this better, sorry
                 var strengthGlob = state.PatchMod.Globals.AddNewShort();
                 strengthGlob.EditorID = $"FURY_Ext_Global_Weight_{petRace.EditorID}";
