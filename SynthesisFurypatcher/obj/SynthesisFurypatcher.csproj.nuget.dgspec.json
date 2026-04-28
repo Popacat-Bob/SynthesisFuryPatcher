@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/home/Broli/Projects/SynthesisFuryPatcher/SynthesisFurypatcher/SynthesisFurypatcher.csproj": {}
+    "Z:\\home\\Broli\\Projects\\SynthesisFuryPatcher\\SynthesisFurypatcher\\SynthesisFurypatcher.csproj": {}
   },
   "projects": {
-    "/home/Broli/Projects/SynthesisFuryPatcher/SynthesisFurypatcher/SynthesisFurypatcher.csproj": {
+    "Z:\\home\\Broli\\Projects\\SynthesisFuryPatcher\\SynthesisFurypatcher\\SynthesisFurypatcher.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/Broli/Projects/SynthesisFuryPatcher/SynthesisFurypatcher/SynthesisFurypatcher.csproj",
+        "projectUniqueName": "Z:\\home\\Broli\\Projects\\SynthesisFuryPatcher\\SynthesisFurypatcher\\SynthesisFurypatcher.csproj",
         "projectName": "SynthesisFurypatcher",
-        "projectPath": "/home/Broli/Projects/SynthesisFuryPatcher/SynthesisFurypatcher/SynthesisFurypatcher.csproj",
-        "packagesPath": "/home/Broli/.nuget/packages/",
-        "outputPath": "/home/Broli/Projects/SynthesisFuryPatcher/SynthesisFurypatcher/obj/",
+        "projectPath": "Z:\\home\\Broli\\Projects\\SynthesisFuryPatcher\\SynthesisFurypatcher\\SynthesisFurypatcher.csproj",
+        "packagesPath": "C:\\users\\steamuser\\.nuget\\packages\\",
+        "outputPath": "Z:\\home\\Broli\\Projects\\SynthesisFuryPatcher\\SynthesisFurypatcher\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/Broli/.nuget/NuGet/NuGet.Config"
+          "C:\\users\\steamuser\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -32,7 +32,13 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -65,7 +71,19 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.25, 8.0.25]"
+              "version": "[8.0.23, 8.0.23]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[8.0.23, 8.0.23]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.23, 8.0.23]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.23, 8.0.23]"
             }
           ],
           "frameworkReferences": {
@@ -73,7 +91,12 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.125/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.310/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
         }
       }
     }

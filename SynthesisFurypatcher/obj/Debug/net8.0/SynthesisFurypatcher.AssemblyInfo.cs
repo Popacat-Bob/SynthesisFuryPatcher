@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SynthesisFurypatcher")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fb26a9c3a9630510e0c1b80ebdf051abbb7d56d3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f3614386746b9ae5a4bd6c3eadc7b03ea6a355f2")]
 [assembly: System.Reflection.AssemblyProductAttribute("SynthesisFurypatcher")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SynthesisFurypatcher")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

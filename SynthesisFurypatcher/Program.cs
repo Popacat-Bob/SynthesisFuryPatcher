@@ -27,7 +27,10 @@ public static class Program
         "FURY_FormList_PetActorsM",
     };
     
+    private static readonly string tameableKeyword = "Futhark_InjectedKeyword_Race_IsTameable";
     private static readonly string tamedKeyword = "Futhark_InjectedKeyword_Race_IsTamedAnimalRace";
+    
+    private static readonly string globalFoodAll = "FURY_Global_FoodType_AshHopper";
 
     private static Lazy<Settings> _settings = null!;
 
@@ -45,6 +48,33 @@ public static class Program
             .SetTypicalOpen(GameRelease.SkyrimSE, "FuryAuto.esp")
             .Run(args);
     }
+
+    private static bool TryCreateSkin(IRaceGetter race, IPatcherState<ISkyrimMod, ISkyrimModGetter> state, out IArmorGetter? res) {
+        res = default;;
+        if (!race.Skin.TryResolve<IArmorGetter>(state.LinkCache, out var skin)) {
+            return false;
+        }
+
+        var skin_dup = state.PatchMod.Armors.DuplicateInAsNewRecord(skin);
+        skin_dup.Race.SetTo(race);
+        skin_dup.EditorID = $"FURY_Skin_{skin_dup.EditorID}";
+        skin_dup.Armature.Clear(); 
+
+        foreach (var armaLink in skin.Armature) {
+            if (!armaLink.TryResolve<IArmorAddonGetter>(state.LinkCache, out var arma)) {
+                return false;
+            }
+            
+            var arma_dup = state.PatchMod.ArmorAddons.DuplicateInAsNewRecord(arma);
+            arma_dup.Race.SetTo(race);
+            arma_dup.EditorID = $"FURY_Skin_{arma_dup.EditorID}";
+            skin_dup.Armature.Add(arma_dup);
+        }
+        
+        res = skin_dup;
+        return true;
+    }
+
     public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
     {
         if (!state.LoadOrder.ContainsKey(FuryModKey)) {
@@ -94,17 +124,38 @@ public static class Program
         Console.WriteLine("SUCCESS: Fury races cached!");
 
 
-        // get all animal races not in fury and patch
+        // Keywords to assign
         if (!state.LinkCache.TryResolve<IKeywordGetter>(tamedKeyword, out var tamedKeyObj)) {
+            Console.WriteLine("WARNING: Tamed Keyword not FOUND. Please inform the mod author if you did not change any keywords.");
+        }
+
+        if (!state.LinkCache.TryResolve<IKeywordGetter>(tameableKeyword, out var tameableKeyObj)) {
             Console.WriteLine("WARNING: Tameable Keyword not FOUND. Please inform the mod author if you did not change any keywords.");
         }
         
+        // if I know any better, I wouldn't do this... sadly I don't
+        if (!state.LinkCache.TryResolve<IGlobalShortGetter>(globalFoodAll, out var globalFoodAllObj)) {
+            Console.WriteLine($"ERROR: Global: {globalFoodAll} not FOUND. Please inform the mod author if no EditorIDs were changed");
+            return;
+        }
+
         // This should not fail
         var racesFrom = Patch_Lookup["FURY_FormList_RacesFrom"];
         var racesTo = Patch_Lookup["FURY_FormList_RacesTo"];
         var levelsFL = Patch_Lookup["FURY_Formlist_PetLevels"];
         var strengthsFL = Patch_Lookup["FURY_FormList_PetStrengthValues"];
         var foodsFL = Patch_Lookup["FURY_FormList_FoodTypes"];
+        var actorFLM = Patch_Lookup["FURY_FormList_PetActorsF"];
+        var actorFLF = Patch_Lookup["FURY_FormList_PetActorsM"];
+        var actorFLB = Patch_Lookup["FURY_FormList_PetActorsBothGenders"];
+ 
+        // Flags to assign
+        var femaleFlag = Mutagen.Bethesda.Skyrim.NpcConfiguration.Flag.Female;
+        var affectsDetectionFlag = Mutagen.Bethesda.Skyrim.NpcConfiguration.Flag.DoesntAffectStealthMeter;
+        var enableDialogue = Mutagen.Bethesda.Skyrim.Race.Flag.AllowPcDialog;
+        
+        // AIData to assign
+        var helpsAllies = Mutagen.Bethesda.Skyrim.Assistance.HelpsAllies;
 
         foreach (INpcGetter npc in state.LoadOrder.PriorityOrder.Npc().WinningOverrides()) {
             IRaceGetter race = npc.Race.Resolve(state.LinkCache);
@@ -113,20 +164,29 @@ public static class Program
                 // make only 2 unique actors per race, NEVER reuse races
                 baseRaces.Add(race.FormKey);
                 
+                var orRace = state.PatchMod.Races.GetOrAddAsOverride(race);
+                orRace.Keywords ??= new Noggog.ExtendedList<IFormLinkGetter<IKeywordGetter>>();
+                orRace.Keywords.Add(tameableKeyObj!.ToLink<IKeywordGetter>());
+
                 var petRace = state.PatchMod.Races.DuplicateInAsNewRecord(race);
                 petRace.Keywords ??= new Noggog.ExtendedList<IFormLinkGetter<IKeywordGetter>>();
                 petRace.Keywords.Add(tamedKeyObj!.ToLink<IKeywordGetter>());
-                petRace.EditorID = $"FURY_Ext_{petRace.EditorID}";
-                racesTo.Items.Add(petRace);
+                petRace.Flags |= enableDialogue;
+                petRace.EditorID = $"FURY_EXT_Race_Pet_{petRace.EditorID}";
+                if (!TryCreateSkin(petRace, state, out var skin)) {
+                    Console.WriteLine($"Warning: Skin for {petRace.EditorID} created;");
+                } else {
+                    petRace.Skin.SetTo(skin);
+                } 
 
+                var oActor = state.PatchMod.Npcs.GetOrAddAsOverride(npc);
+                
                 var petActorM = state.PatchMod.Npcs.DuplicateInAsNewRecord(npc); 
                 var petActorF = state.PatchMod.Npcs.DuplicateInAsNewRecord(npc);
                 
-                petActorM.EditorID = $"FURY_Ext_Actor_Pet_{npc.EditorID}";
-                petActorF.EditorID = $"FURY_Ext_Actor_Pet_{npc.EditorID}_F";
+                petActorM.EditorID = $"FURY_EXT_Actor_Pet_{npc.EditorID}M";
+                petActorF.EditorID = $"FURY_EXT_Actor_Pet_{npc.EditorID}F";
 
-                var femaleFlag = Mutagen.Bethesda.Skyrim.NpcConfiguration.Flag.Female;
-                var affectsDetectionFlag = Mutagen.Bethesda.Skyrim.NpcConfiguration.Flag.DoesntAffectStealthMeter;
 
                 if (!npc.Configuration.Flags.HasFlag(femaleFlag)) {
                     petActorF.Configuration.Flags |= femaleFlag;
@@ -138,39 +198,54 @@ public static class Program
                 petActorM.Configuration.Flags |= affectsDetectionFlag;
                 petActorF.Configuration.Level = new NpcLevel() {Level = 1};
                 petActorM.Configuration.Level = new NpcLevel() {Level = 1};
+                petActorF.AIData.Assistance = helpsAllies;
+                petActorM.AIData.Assistance = helpsAllies;
+                petActorF.Race = petRace.ToLink();
+                petActorM.Race = petRace.ToLink();
+                petActorF.WornArmor.SetTo(skin);
+                petActorM.WornArmor.SetTo(skin);
 
                 // I do not know how to do this better, sorry
                 var strengthGlob = state.PatchMod.Globals.AddNewShort();
-                strengthGlob.EditorID = $"FURY_Ext_Global_Weight_{petRace.EditorID}";
+                strengthGlob.EditorID = $"FURY_EXT_Global_Weight_{petRace.EditorID}";
 
                 var levelGlob = state.PatchMod.Globals.AddNewShort();
-                levelGlob.EditorID = $"FURY_Ext_Global_Level_{petRace.EditorID}";
+                levelGlob.EditorID = $"FURY_EXT_Global_Level_{petRace.EditorID}";
 
-                var foodGlob = state.PatchMod.Globals.AddNewShort();
-                foodGlob.EditorID = $"FURY_Ext_Global_FoodType_{petRace.EditorID}";
+                // var foodGlob = state.PatchMod.Globals.AddNewShort();
+                // foodGlob.EditorID = $"FURY_EXT_Global_FoodType_{petRace.EditorID}";
+                // foodGlob.Data = 0;
 
                 switch (petRace.Size) {
                     case Mutagen.Bethesda.Skyrim.Size.Small:
-                        strengthGlob.Data = 4;
+                        strengthGlob.Data = 2;
                         levelGlob.Data = 10;
                         break;
                     case Mutagen.Bethesda.Skyrim.Size.Medium:
-                        strengthGlob.Data = 6;
+                        strengthGlob.Data = 3;
                         levelGlob.Data = 15;
                         break;
                     case Mutagen.Bethesda.Skyrim.Size.Large:
-                        strengthGlob.Data = 8;
+                        strengthGlob.Data = 4;
                         levelGlob.Data = 20;
                         break;
                     case Mutagen.Bethesda.Skyrim.Size.ExtraLarge:
-                        strengthGlob.Data = 10;
+                        strengthGlob.Data = 6;
                         levelGlob.Data = 25;
                         break;
                 }
-
+                
+                racesFrom.Items.Add(race);
+                racesTo.Items.Add(petRace);
                 strengthsFL.Items.Add(strengthGlob);
                 levelsFL.Items.Add(levelGlob);
-                foodsFL.Items.Add(foodGlob);
+                foodsFL.Items.Add(globalFoodAllObj.ToLink<ISkyrimMajorRecordGetter>());
+                actorFLF.Items.Add(petActorF);
+                actorFLM.Items.Add(petActorM);
+
+                // Must be appended in this order by convention
+                actorFLB.Items.Add(petActorF);
+                actorFLB.Items.Add(petActorM);
                 
                 Console.WriteLine($"SUCCESS: Processed EditorID: {petRace.EditorID}");
             }
